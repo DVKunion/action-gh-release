@@ -174,36 +174,46 @@ export const upload = async (
   console.log(`⬆️ Uploading ${name}...`);
   const endpoint = new URL(url);
   endpoint.searchParams.append("name", name);
-  const resp = await fetch(endpoint, {
-    headers: {
-      "content-length": `${size}`,
-      "content-type": mime,
-      authorization: `token ${config.github_token}`
-    },
-    method: "POST",
-    body
-  });
-  const json = await resp.json();
-  if (resp.status !== 201) {
-    if (maxRetries <= 0) {
-      throw new Error(
-        `Failed to upload release asset ${name}. received status code ${
-          resp.status
-        }\n${json.message}\n${JSON.stringify(json.errors)}`
+  try {
+    const resp = await fetch(endpoint, {
+      headers: {
+        "content-length": `${size}`,
+        "content-type": mime,
+        authorization: `token ${config.github_token}`
+      },
+      method: "POST",
+      body
+    });
+    const json = await resp.json();
+    if (resp.status !== 201) {
+      if (maxRetries <= 0) {
+        throw new Error(
+            `Failed to upload release asset ${name}. received status code ${
+                resp.status
+            }\n${json.message}\n${JSON.stringify(json.errors)}`
+        );
+      }
+      console.log(
+          `Failed to upload asset ${name} (${maxRetries - 1} retries remaining).`
       );
+
+      if (config.input_retry_interval) {
+        await new Promise(r => setTimeout(r, config.input_retry_interval));
+      }
+
+      return upload(config, github, url, path, currentAssets, maxRetries - 1);
     }
-
+    return json;
+  } catch (e) {
     console.log(
-      `Failed to upload asset ${name} (${maxRetries - 1} retries remaining).`
+        `Failed to upload asset ${name} (${maxRetries - 1} retries remaining).`
     );
-
     if (config.input_retry_interval) {
       await new Promise(r => setTimeout(r, config.input_retry_interval));
     }
 
     return upload(config, github, url, path, currentAssets, maxRetries - 1);
-  }
-  return json;
+  };
 };
 
 export const release = async (

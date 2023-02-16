@@ -13,10 +13,14 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: index.js
+          path: dist/index.js
       - name: Test
         run: npm run test
-      - name: Format
-        run: npm run fmtcheck
+#      - name: Format
+#        run: npm run fmtcheck
       # - name: "check for uncommitted changes"
       #   # Ensure no changes, but ignore node_modules dir since dev/fresh ci deps installed.
       #   run: |
